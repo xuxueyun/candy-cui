@@ -1,0 +1,31 @@
+<component name="libraryTable">
+  <library name="GOPATH &lt;gocui&gt;">
+    <CLASSES>
+      <root url="file://Z:/home/yz/Go/src/pybbs-go" />
+      <root url="file://D:/Go/src/$Recycle.Bin" />
+      <root url="file://Z:/home/yz/Go/src/google.golang.org" />
+      <root url="file://Z:/home/yz/Go/src/golang.org" />
+      <root url="file://Z:/home/yz/Go/src/github.com" />
+      <root url="file://Z:/home/yz/Go/src/gopkg.in" />
+      <root url="file://D:/Go/src/github.com" />
+      <root url="file://D:/Go/src/golang.org" />
+      <root url="file://D:/Go/src/pybbs-go" />
+      <root url="file://D:/Go/src/sourcegraph.com" />
+    </CLASSES>
+    <SOURCES>
+      <root url="file://Z:/home/yz/Go/src/pybbs-go" />
+      <root url="file://D:/Go/src/$Recycle.Bin" />
+      <root url="file://Z:/home/yz/Go/src/google.golang.org" />
+      <root url="file://Z:/home/yz/Go/src/golang.org" />
+      <root url="file://Z:/home/yz/Go/src/github.com" />
+      <root url="file://Z:/home/yz/Go/src/gopkg.in" />
+      <root url="file://D:/Go/src/github.com" />
+      <root url="file://D:/Go/src/golang.org" />
+      <root url="file://D:/Go/src/pybbs-go" />
+      <root url="file://D:/Go/src/sourcegraph.com" />
+    </SOURCES>
+    <excluded>
+      <root url="file://$PROJECT_DIR$" />
+    </excluded>
+  </library>
+</component>
