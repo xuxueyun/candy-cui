@@ -10,8 +10,8 @@ import (
 	"log"
 	//"strings"
 	//"os"
-
 	"github.com/jroimartin/gocui"
+	"github.com/zeazen/candy-cui/candy"
 	"github.com/zeazen/candy-cui/view/login"
 )
 
@@ -163,10 +163,10 @@ func main() {
 		log.Panicln(err)
 	}
 	// 初始化 candy 客户端
-	//candy.CandyCUIClient = candy.NewCandyClient("127.0.0.1:9000", &candy.CuiHandler{})
-	//if err := candy.CandyCUIClient.Start(); err != nil {
-	//	log.Panic(err)
-	//}
+	candy.CandyCUIClient = candy.NewCandyClient("127.0.0.1:9000", &candy.CuiHandler{})
+	if err := candy.CandyCUIClient.Start(); err != nil {
+		log.Panic(err)
+	}
 
 	// 加载程序首页 登录界面
 	g.SetManagerFunc(login.LayoutLogin)

@@ -5,9 +5,10 @@ import (
 	//"io"
 	//"log"
 	//"strings"
-	"log"
-
+	//	"errors"
 	"github.com/jroimartin/gocui"
+	"github.com/zeazen/candy-cui/candy"
+	"log"
 )
 
 // showRegisteLayout 切换到 registe 界面
@@ -53,6 +54,35 @@ func registeNextView(g *gocui.Gui, v *gocui.View) error {
 
 // callRegiste 临时 调用 registe
 func callRegiste(g *gocui.Gui, v *gocui.View) error {
+	//获取用户输入
+	v, err := g.View("registeEmailTextField")
+	if err != nil {
+		return err
+	}
+	emailStr := v.Buffer()
+	v, err = g.View("registePasswdTextField")
+	if err != nil {
+		return err
+	}
+	passwd1 := v.Buffer()
+	v.Clear()
+	v, err = g.View("passwdRepeatTextField")
+	if err != nil {
+		return err
+	}
+	passwd2 := v.Buffer()
+	v.Clear()
+	if passwd1 != passwd2 {
+		fmt.Fprint(v, emailStr)
+		//return errors.New("密码不匹配")
+	}
+	_, err = candy.CandyCUIClient.Register(emailStr, passwd1)
+	if err != nil {
+		//e := candy.ErrorParse(err.Error())
+		//		log.Errorf("Register code:%v error:%v", e.Code, e.Msg)
+		return err
+	}
+	//	log.Debugf("Register success, userID:%v userName:%v userPassword:%v", id, emailStr, passwd1)
 	return nil
 }
 
@@ -111,14 +141,14 @@ func LayoutRegiste(g *gocui.Gui) error {
 			return err
 		}
 		v.Editable = true
-
+		v.Mask = '*'
 	}
 	if v, err := g.SetView("passwdRepeatTextField", maxX/2-20, maxY/2+6, maxX/2+18, maxY/2+8); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		v.Editable = true
-
+		v.Mask = '*'
 	}
 	if v, err := g.SetView("registeCallButton", maxX/2-14, maxY/2+9, maxX/2-6, maxY/2+11); err != nil {
 		if err != gocui.ErrUnknownView {
