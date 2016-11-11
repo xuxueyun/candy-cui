@@ -7,11 +7,12 @@ import (
 	//"strings"
 	//	"errors"
 	"github.com/jroimartin/gocui"
-	//"github.com/zeazen/candy-cui/candy"
+	"github.com/zeazen/candy-cui/candy"
 	"log"
 	//"time"
 	//"strconv"
-	"github.com/juju/errors"
+	//"github.com/juju/errors"
+	//"strconv"
 )
 
 // showRegisteLayout 切换到 registe 界面
@@ -63,38 +64,49 @@ func callRegiste(g *gocui.Gui, v *gocui.View) error {
 		return err
 	}
 	emailStr := v.ViewBuffer()
+	// gocui 的大坑
+	if len(emailStr) < 2 {
+		fmt.Fprintln(v, "email empty")
+		return nil
+	}
+	emailStr = emailStr[:len(emailStr)-2]
+
 	v, err = g.View("registePasswdTextField")
 	if err != nil {
 		return err
 	}
-	// gocui 的大坑
-	if len(emailStr)<2{
-		return errors.New("email 空")
+	pass1 := v.ViewBuffer()
+	if len(pass1) < 2 {
+		fmt.Fprintln(v, "password empty")
+		return nil
 	}
-	fmt.Fprintln(v, "ssss"+emailStr[:len(emailStr)-2])
-	//passwd1 := v.Buffer()
-	//v.Clear()
-	//v, err = g.View("passwdRepeatTextField")
-	//if err != nil {
-	//	return err
-	//}
-	//passwd2 := v.Buffer()
-	//v.Clear()
-	//if passwd1 != passwd2 {
-	//	fmt.Fprint(v, emailStr)
-	//	//return errors.New("密码不匹配")
-	//}
-	//v, err = g.View("registeEmailTextField")
-	//v.Clear()
-	//fmt.Fprint(v, "ssss")
-	//time.Sleep(time.Second*10)
-	//_, err = candy.CandyCUIClient.Register(emailStr, passwd1)
-	//if err != nil {
-	//	//e := candy.ErrorParse(err.Error())
-	//	//		log.Errorf("Register code:%v error:%v", e.Code, e.Msg)
-	//	return err
-	//}
-	////	log.Debugf("Register success, userID:%v userName:%v userPassword:%v", id, emailStr, passwd1)
+	pass1 = pass1[:len(pass1)-2]
+	v.Clear()
+
+	v, err = g.View("passwdRepeatTextField")
+	if err != nil {
+		return err
+	}
+	pass2 := v.ViewBuffer()
+	if len(pass2) < 2 {
+		fmt.Fprintln(v, "password empty")
+		return nil
+	}
+	pass2 = pass2[:len(pass2)-2]
+	v.Clear()
+
+	if pass1 != pass2 {
+		fmt.Fprintln(v, "password1 != password2")
+		return nil
+	}
+
+	id, err := candy.CandyCUIClient.Register(emailStr, pass1)
+	if err != nil {
+		fmt.Fprintln(v, err.Error()+"***registe***")
+		return nil
+	}
+	fmt.Fprintln(v, id)
+
 	return nil
 }
 

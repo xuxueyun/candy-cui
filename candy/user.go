@@ -2,7 +2,7 @@ package candy
 
 import (
 	"github.com/zeazen/candy-cui/meta"
-	"github.com/zeazen/candy-cui/util/log"
+	//"github.com/zeazen/candy-cui/util/log"
 	"golang.org/x/net/context"
 )
 
@@ -26,6 +26,6 @@ func (c *CandyClient) Register(user, passwd string) (int64, error) {
 	if err != nil {
 		return -1, err
 	}
-	log.Debugf("resp:%+v", resp)
+	//log.Debugf("resp:%+v", resp)
 	return resp.ID, resp.Header.JsonError()
 }
