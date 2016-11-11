@@ -1,0 +1,9 @@
+# Folders
+bin
+db
+.DS_Store
+.idea
+
+*.exe
+*.o
+main
