@@ -2,7 +2,9 @@
 
 ## candy-cui ( candy Console User Interfaces )
 candy cui 是开源即时通信软件 Candy 的一个客户端实现. 基于命令行, 可在 windows / linux / MAC 下运行.
+
 candy 包含一套完整的即时通讯解决方案, 包括移动端 / web端 / pc端. 
+
 candy 项目地址: https://github.com/dearcode/candy
 
 ## candy-cui 部分界面
@@ -12,8 +14,12 @@ candy 项目地址: https://github.com/dearcode/candy
 
 ## 项目编译运行(win / linux)
 clone 到 $GOPATH/github.com/zeazen/ 目录下
-`git clone https://github.com/zeazen/candy-cui.git`
-`go build main.go`
+
+```
+git clone https://github.com/zeazen/candy-cui.git
+go build main.go
+```
+
 运行即可
 
 欢迎各种吐槽
