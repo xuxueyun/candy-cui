@@ -33,7 +33,7 @@ func main() {
 		log.Panicln(err)
 	}
 	// 初始化 candy 客户端
-	candy.CandyCUIClient = candy.NewCandyClient("172.16.23.53:9000", &candy.CuiHandler{})
+	candy.CandyCUIClient = candy.NewCandyClient("CUI","172.16.23.22:9000", &candy.CuiHandler{})
 	if err := candy.CandyCUIClient.Start(); err != nil {
 		log.Panic(err)
 	}

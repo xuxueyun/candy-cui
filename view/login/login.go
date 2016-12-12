@@ -7,6 +7,7 @@ import (
 	//"strings"
 
 	"github.com/jroimartin/gocui"
+	"github.com/zeazen/candy-cui/candy"
 )
 
 // backToLoginLayout 返回到 login 主界面
@@ -50,6 +51,43 @@ func loginNextView(g *gocui.Gui, v *gocui.View) error {
 	return err
 }
 
+// callLogin  调用 Login
+func callLogin(g *gocui.Gui, v *gocui.View) error {
+	//获取用户输入
+	v, err := g.View("emailTextField")
+	if err != nil {
+		return err
+	}
+	emailStr := v.ViewBuffer()
+	// gocui 的大坑
+	if len(emailStr) < 2 {
+		fmt.Fprintln(v, "email empty")
+		return nil
+	}
+	emailStr = emailStr[:len(emailStr)-2]
+
+	v, err = g.View("passwdTextField")
+	if err != nil {
+		return err
+	}
+	pass1 := v.ViewBuffer()
+	if len(pass1) < 2 {
+		fmt.Fprintln(v, "password empty")
+		return nil
+	}
+	pass1 = pass1[:len(pass1)-2]
+	v.Clear()
+
+	id, err := candy.CandyCUIClient.Login(emailStr, pass1)
+	if err != nil {
+		fmt.Fprintln(v, err.Error()+"***login***")
+		return nil
+	}
+	fmt.Fprintln(v, id)
+
+	return nil
+}
+
 // LoginKeybindings login界面按键绑定
 func LoginKeybindings(g *gocui.Gui) error {
 	// Login 界面的 Tab 切换 binding
@@ -69,7 +107,7 @@ func LoginKeybindings(g *gocui.Gui) error {
 		return err
 	}
 	// 各按钮功能部分
-	if err := g.SetKeybinding("loginButton", gocui.KeyEnter, gocui.ModNone, loginNextView); err != nil {
+	if err := g.SetKeybinding("loginButton", gocui.KeyEnter, gocui.ModNone, callLogin); err != nil {
 		return err
 	}
 	if err := g.SetKeybinding("registeButton", gocui.KeyEnter, gocui.ModNone, showRegisteLayout); err != nil {

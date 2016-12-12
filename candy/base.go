@@ -8,7 +8,6 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/zeazen/candy-cui/meta"
 	"github.com/zeazen/candy-cui/util"
@@ -48,7 +47,8 @@ type CandyClient struct {
 	user    string
 	pass    string
 	device  string
-	sync.RWMutex
+	closer chan struct{}
+	mu sync.RWMutex
 }
 
 // CuiHandler 原cmdclient 满世界用
@@ -78,8 +78,8 @@ func (c *CuiHandler) OnUnHealth(msg string) {
 var CandyCUIClient *CandyClient
 
 // NewCandyClient - create an new CandyClient
-func NewCandyClient(host string, handler MessageHandler) *CandyClient {
-	return &CandyClient{host: host, handler: handler, broken: true}
+func NewCandyClient(dev,host string, handler MessageHandler) *CandyClient {
+	return &CandyClient{device:dev,host: host, handler: handler, broken: true,closer:make(chan struct{})}
 }
 
 // Start 连接服务端.
@@ -94,6 +94,7 @@ func (c *CandyClient) Start() error {
 
 	c.gate = meta.NewGateClient(c.conn)
 	c.last = time.Now()
+	c.broken = false
 
 	go c.healthCheck()
 
@@ -108,47 +109,9 @@ func (c *CandyClient) service(call func(context.Context, meta.GateClient) error)
 		log.Infof("call:%s error:%s", c.host, err.Error())
 		return
 	}
-	c.Lock()
+	c.mu.Lock()
 	c.last = time.Now()
-	c.Unlock()
-}
-
-// Login 用户登陆, 如果发生连接断开，一定要重新登录
-func (c *CandyClient) Login(user, passwd string) (int64, error) {
-	if code, err := CheckUserName(user); err != nil {
-		return -1, NewError(code, err.Error())
-	}
-
-	if code, err := CheckUserPassword(passwd); err != nil {
-		return -1, NewError(code, err.Error())
-	}
-
-	req := &meta.GateUserLoginRequest{User: user, Password: passwd}
-	var resp *meta.GateUserLoginResponse
-	var err error
-	c.service(func(ctx context.Context, api meta.GateClient) error {
-		if resp, err = api.Login(ctx, req); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return -1, err
-	}
-
-	c.token = resp.Token
-	c.id = resp.ID
-	c.user = user
-	c.pass = passwd
-
-	stream, err := c.openStream()
-	if err != nil {
-		return -1, err
-	}
-
-	go c.receiver(stream)
-
-	return resp.ID, nil
+	c.mu.Unlock()
 }
 
 func (c *CandyClient) openStream() (resp meta.Gate_StreamClient, err error) {
@@ -176,14 +139,14 @@ func (c *CandyClient) receiver(stream meta.Gate_StreamClient) {
 }
 
 func (c *CandyClient) onError(msg string) {
-	c.Lock()
+	c.mu.Lock()
 	c.last = time.Now().Add(-time.Minute)
 	if c.broken {
-		c.Unlock()
+		c.mu.Unlock()
 		return
 	}
 	c.broken = true
-	c.Unlock()
+	c.mu.Unlock()
 
 	if strings.Contains(msg, "invalid context") && c.user != "" && c.pass != "" {
 		c.Login(c.user, c.pass)
@@ -192,19 +155,8 @@ func (c *CandyClient) onError(msg string) {
 	c.handler.OnError(msg)
 }
 
-//onHealth 如果网络正常了，要尝试启动Push Stream
-func (c *CandyClient) onHealth() {
-	c.Lock()
-	c.last = time.Now()
-	if !c.broken {
-		c.Unlock()
-		return
-	}
-	c.broken = false
-	c.Unlock()
 
-	c.handler.OnHealth()
-
+func (c *CandyClient) startReceiver() {
 	if c.token != 0 && c.id != 0 {
 		stream, err := c.openStream()
 		if err != nil {
@@ -214,7 +166,33 @@ func (c *CandyClient) onHealth() {
 		go c.receiver(stream)
 
 	}
+}
 
+//onHealth 如果网络正常了，要尝试启动Push Stream
+func (c *CandyClient) onHealth() {
+	c.mu.Lock()
+	c.last = time.Now()
+	if !c.broken {
+		c.mu.Unlock()
+		return
+	}
+	c.broken = false
+	c.mu.Unlock()
+
+	c.handler.OnHealth()
+
+	c.startReceiver()
+
+	log.Debugf("heartbeat ok")
+}
+
+
+// OnNetStateChange 移动端如果网络状态发生变化要通知这边
+func (c *CandyClient) OnNetStateChange() {
+	//TODO 细分
+	c.mu.Lock()
+	c.last = time.Now().Add(-time.Minute)
+	c.mu.Unlock()
 }
 
 // healthCheck 健康检查,60秒发一次, 目前服务器超过90秒会发探活
@@ -222,22 +200,42 @@ func (c *CandyClient) healthCheck() {
 	t := time.NewTicker(networkTimeout)
 	defer t.Stop()
 
+	req := &meta.HeartbeatRequest{}
+	var resp *meta.HeartbeatResponse
+	var err error
+
 	for {
-		<-t.C
-		c.RLock()
-		if time.Now().Sub(c.last) < time.Minute {
-			c.RUnlock()
+		select {
+		case <-c.closer:
+			t.Stop()
+			return
+		case <-t.C:
+		}
+		c.mu.RLock()
+		if c.token == 0 || time.Now().Sub(c.last) < time.Minute {
+			c.mu.RUnlock()
 			continue
 		}
-		c.RUnlock()
+		c.mu.RUnlock()
 
-		_, err := healthpb.NewHealthClient(c.conn).Check(context.Background(), &healthpb.HealthCheckRequest{})
+		c.service(func(ctx context.Context, client meta.GateClient) error {
+			resp, err = client.Heartbeat(ctx, req)
+			return err
+		})
+
 		if err != nil {
-			log.Errorf("healthCheck error:%v", err)
 			c.onError(err.Error())
 			continue
 		}
-		log.Debugf("onHealth")
+
+		if resp.Header.Error() != nil {
+			log.Errorf("Heartbeat response error:%v", resp.Header.Error())
+			if c.user != "" && c.pass != "" {
+				c.Login(c.user, c.pass)
+			}
+			continue
+		}
+
 		c.onHealth()
 	}
 }
