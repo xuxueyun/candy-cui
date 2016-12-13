@@ -24,12 +24,36 @@ func chatNextView(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
+// chatCommand 聊天窗口命令处理
+func chatCommand(g *gocui.Gui, v *gocui.View) error {
+	//获取用户输入
+	v, err := g.View("input")
+	if err != nil {
+		return err
+	}
+	inputStr := v.ViewBuffer()
+	// gocui 的大坑
+	if len(inputStr) < 2 {
+		return nil
+	}
+	inputStr = inputStr[:len(inputStr)-2]
+
+	chatV, err := g.View("chat")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(chatV, inputStr)
+
+	v.Clear()
+
+	return nil
+}
+
 // registeKeybindings registe 界面按键绑定
 func chatKeybindings(g *gocui.Gui) error {
-	// Registe 界面的 Tab 切换 binding
-	//if err := g.SetKeybinding("registeEmailTextField", gocui.KeyTab, gocui.ModNone, registeNextView); err != nil {
-	//	return err
-	//}
+	if err := g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, chatCommand); err != nil {
+		return err
+	}
 	//if err := g.SetKeybinding("registePasswdTextField", gocui.KeyTab, gocui.ModNone, registeNextView); err != nil {
 	//	return err
 	//}
